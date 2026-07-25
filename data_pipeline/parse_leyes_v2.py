@@ -236,4 +236,5 @@ if __name__ == "__main__":
         out_path = f"{OUT_DIR}/{ley['slug']}.json"
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump(resultado, f, ensure_ascii=False, indent=2)
-        print(f"✓ {ley['slug']}: {resultado['metadatos_documento']['total_articulos']} artículos → {out_path}") 
+        print(f"✓ {ley['slug']}: {resultado['metadatos_documento']['total_articulos']} artículos → {out_path}")
+        
