@@ -126,6 +126,7 @@ def parsear_ley(texto: str, ordenamiento: str, materia: str, fuente_pdf: str, pr
     titulo_actual = ""
     capitulo_actual = ""
     seccion_actual = ""
+    contador_ids: dict[str, int] = {}
 
     for idx, m in enumerate(matches):
         inicio = m.end()
@@ -176,8 +177,12 @@ def parsear_ley(texto: str, ordenamiento: str, materia: str, fuente_pdf: str, pr
         elif reformas_iso:
             estado_vigencia = "Reformado"
 
+        id_base = f"{prefijo_id}-ART-{numero_articulo.replace(' ', '_')}"
+        contador_ids[id_base] = contador_ids.get(id_base, 0) + 1
+        id_final = id_base if contador_ids[id_base] == 1 else f"{id_base}_v{contador_ids[id_base]}"
+
         registro = {
-            "id": f"{prefijo_id}-ART-{numero_articulo.replace(' ', '_')}",
+            "id": id_final,
             "libro": libro_actual,
             "titulo": titulo_actual,
             "capitulo": capitulo_actual,
@@ -231,5 +236,4 @@ if __name__ == "__main__":
         out_path = f"{OUT_DIR}/{ley['slug']}.json"
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump(resultado, f, ensure_ascii=False, indent=2)
-        print(f"✓ {ley['slug']}: {resultado['metadatos_documento']['total_articulos']} artículos → {out_path}")
-        
+        print(f"✓ {ley['slug']}: {resultado['metadatos_documento']['total_articulos']} artículos → {out_path}") 
