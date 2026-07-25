@@ -5,7 +5,7 @@
 2. `py parse_leyes_v2.py` → genera `data/clean_text_v2/*.json`
 3. `py build_vector_store.py` → genera `data/chroma_db/`
 
-## Para el equipo de backend
+## Para el equipo
 - Vector store persistente en: `data/chroma_db/`
 - Colección: `leyes_tamaulipas`
 - Import: `from build_vector_store import buscar`
