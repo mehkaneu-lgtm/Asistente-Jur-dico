@@ -1,0 +1,74 @@
+# =========================
+# Secretos y Credenciales (¡NUNCA SUBIR!)
+# =========================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+secrets/
+
+# =========================
+# Python (Backend, IA, Scraping)
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Entornos Virtuales
+venv/
+env/
+.venv/
+.env/
+env.bak/
+venv.bak/
+*.egg-info/
+
+# Jupyter Notebooks (Análisis y pruebas de prompts)
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# =========================
+# Node.js / Frontend (React, Next.js, Vue)
+# =========================
+node_modules/
+dist/
+build/
+.next/
+out/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# =========================
+# Bases de Datos Vectoriales y Datos
+# =========================
+# ChromaDB y SQLite (Común en Langchain/LlamaIndex)
+chroma_db/
+chroma/
+*.sqlite3
+*.db
+
+# FAISS o archivos de serialización
+*.faiss
+*.pkl
+
+# Archivos de datos crudos (Leyes, PDFs, JSONs masivos)
+# Mantenemos los scripts, pero no los datos pesados para no saturar GitHub
+data/*
+!data/sample/      # Usar esta carpeta solo para datos de prueba pequeños
+!data/README.md
+
+# =========================
+# Sistemas Operativos y Editores (IDE)
+# =========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
