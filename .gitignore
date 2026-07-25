@@ -2,73 +2,44 @@
 # Secretos y Credenciales (¡NUNCA SUBIR!)
 # =========================
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+backend/.env
 *.pem
 secrets/
 
 # =========================
-# Python (Backend, IA, Scraping)
+# Python (Backend e IA)
 # =========================
 __pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
-.coverage
-htmlcov/
-
-# Entornos Virtuales
 venv/
 env/
 .venv/
-.env/
-env.bak/
-venv.bak/
-*.egg-info/
 
-# Jupyter Notebooks (Análisis y pruebas de prompts)
+# Jupyter Notebooks (Para evaluaciones)
 .ipynb_checkpoints
-*.ipynb_checkpoints/
 
 # =========================
-# Node.js / Frontend (React, Next.js, Vue)
+# Node.js / Frontend
 # =========================
-node_modules/
-dist/
-build/
-.next/
-out/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
+frontend/node_modules/
+frontend/dist/
+frontend/.next/
 
 # =========================
-# Bases de Datos Vectoriales y Datos
+# Bases de Datos Vectoriales y Datos masivos
 # =========================
-# ChromaDB y SQLite (Común en Langchain/LlamaIndex)
-chroma_db/
-chroma/
-*.sqlite3
-*.db
+# No subir la base de datos vectorial
+backend/chroma_db/
 
-# FAISS o archivos de serialización
-*.faiss
-*.pkl
-
-# Archivos de datos crudos (Leyes, PDFs, JSONs masivos)
-# Mantenemos los scripts, pero no los datos pesados para no saturar GitHub
-data/*
-!data/sample/      # Usar esta carpeta solo para datos de prueba pequeños
-!data/README.md
+# No subir los PDFs ni los JSONs masivos
+backend/data/*
+data_pipeline/data/*
+!backend/data/sample_data.json
 
 # =========================
-# Sistemas Operativos y Editores (IDE)
+# SO y Editores
 # =========================
 .DS_Store
-Thumbs.db
 .vscode/
-.idea/
-*.swp
