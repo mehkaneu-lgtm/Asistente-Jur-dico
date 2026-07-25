@@ -2,12 +2,12 @@
 # Secretos y Credenciales (¡NUNCA SUBIR!)
 # =========================
 .env
-backend/.env
+backend/.env#a
 *.pem
 secrets/
 
 # =========================
-# Python (Backend e IA)
+# Python (Backend e IA)#a
 # =========================
 __pycache__/
 *.py[cod]
