@@ -6,7 +6,7 @@ modelo_embeddings = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
 
 def buscar_ley(pregunta: str) -> str:
     """Busca en la base de datos vectorial el artículo más relevante."""
-    client = chromadb.PersistentClient(path="./data/chroma_db")
+    client = chromadb.PersistentClient(path="../data/chroma_db")
     
     # Cambiamos al nombre correcto de la colección
     collection = client.get_or_create_collection(name="leyes_tamaulipas")
