@@ -10,6 +10,7 @@ import time
 import uuid
 import subprocess
 import platform
+import requests
 import tkinter as tk
 from tkinter import font as tkfont
 from tkinter import messagebox
@@ -648,8 +649,22 @@ class IAApp(tk.Tk):
         hilo.start()
 
     def _hilo_generar_respuesta(self, texto_usuario, widget_indicador):
-        respuesta = generar_respuesta_ia(texto_usuario)
-        # Volver al hilo principal de Tkinter para actualizar la interfaz
+        # 1. Obtener la conversación activa
+        conv = self.conversaciones[self.conversacion_actual]
+        
+        # 2. Extraer el historial previo para darle memoria al modelo
+        historial_previo = []
+        for msg in conv.mensajes[:-1]:  # Ignoramos el último mensaje (que es la pregunta actual)
+            rol = "user" if msg.autor == "user" else "assistant"
+            historial_previo.append({"role": rol, "content": msg.texto})
+            
+        # Tomamos solo los últimos 6 mensajes
+        historial_previo = historial_previo[-6:]
+
+        # 3. Consultar a la IA pasando la pregunta Y el historial
+        respuesta = generar_respuesta_ia(texto_usuario, historial_previo)
+        
+        # 4. Actualizar la interfaz gráfica
         self.after(0, lambda: self._finalizar_respuesta(respuesta, widget_indicador))
 
     def _finalizar_respuesta(self, respuesta, widget_indicador):
@@ -722,36 +737,36 @@ class IAApp(tk.Tk):
 # ----------------------------------------------------------------------
 # CONEXIÓN CON EL MODELO DE IA
 # ----------------------------------------------------------------------
-def generar_respuesta_ia(mensaje_usuario: str) -> str:
-    """
-    Punto de integración con tu backend de IA.
+BACKEND_URL = "http://localhost:8000/query"
 
-    Reemplaza el contenido de esta función para conectar con:
-      - La API de Anthropic (Claude) usando el SDK 'anthropic'
-      - La API de OpenAI
-      - Un modelo local (Ollama, llama.cpp, etc.)
+def generar_respuesta_ia(mensaje_usuario: str, historial: list = None) -> str:
+    if historial is None:
+        historial = []
 
-    Ejemplo con la API de Anthropic (requiere `pip install anthropic`
-    y una variable de entorno ANTHROPIC_API_KEY):
+    payload = {
+        "question": mensaje_usuario,
+        "history": historial  # <-- Enviamos el historial
+    }
 
-        import anthropic
-        client = anthropic.Anthropic()
-        respuesta = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=1000,
-            messages=[{"role": "user", "content": mensaje_usuario}],
-        )
-        return respuesta.content[0].text
-
-    Por ahora, esta función solo simula una respuesta con un pequeño retraso.
-    """
-    time.sleep(1.2)  # simula latencia de red
-    return (
-        "Esto es una respuesta de ejemplo. Conecta la función "
-        "generar_respuesta_ia() a tu modelo de IA real (Claude, "
-        "OpenAI, un modelo local, etc.) para reemplazar este texto.\n\n"
-        f"Tu mensaje fue: \"{mensaje_usuario}\""
-    )
+    try:
+        response = requests.post(BACKEND_URL, json=payload, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            respuesta = data.get("answer", "No se obtuvo respuesta.")
+            
+            fuentes = data.get("sources", [])
+            if fuentes:
+                respuesta += "\n\n *Fuentes consultadas:*\n" + "\n".join([f"- {f}" for f in fuentes])
+                
+            return respuesta
+        else:
+            return f" Error {response.status_code} al conectar con el servidor."
+            
+    except requests.exceptions.ConnectionError:
+        return " No se pudo conectar con el Backend (Asegúrate de ejecutar FastAPI en localhost:8000)."
+    except Exception as e:
+        return f" Error inesperado: {str(e)}"
 
 
 if __name__ == "__main__":
