@@ -1,6 +1,7 @@
 """
 Plantilla de interfaz de escritorio para IA (estilo Claude / Copilot)
 con panel lateral desplegable para seleccionar y abrir PDFs de Jurisprudencia.
+Incluye soporte para Logo y enlace a Leyes de México.
 """
 
 import os
@@ -11,9 +12,19 @@ import uuid
 import subprocess
 import platform
 import requests
+import webbrowser
 import tkinter as tk
 from tkinter import font as tkfont
 from tkinter import messagebox
+
+# Pillow es opcional: si está instalado, permite cargar logos en más
+# formatos (JPG, etc.) y redimensionarlos con buena calidad. Si no está
+# instalado, se usa tk.PhotoImage (soporta PNG/GIF/PPM de forma nativa).
+try:
+    from PIL import Image, ImageTk
+    _PIL_DISPONIBLE = True
+except ImportError:
+    _PIL_DISPONIBLE = False
 
 # ----------------------------------------------------------------------
 # PALETAS DE COLORES
@@ -48,9 +59,16 @@ PALETA_OSCURA = {
 
 FONT_FAMILY = "Segoe UI"
 
-# La carpeta se crea SIEMPRE junto a este archivo .py, sin importar desde
-# dónde se ejecute el script (doble clic, terminal, acceso directo, etc.)
+# La carpeta se crea SIEMPRE junto a este archivo .py
 CARPETA_PDFS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "jurisprudencias_pdf")
+
+# ----------------------------------------------------------------------
+# LOGO (esquina superior izquierda del panel lateral)
+# ----------------------------------------------------------------------
+CARPETA_APP = os.path.dirname(os.path.abspath(__file__))
+NOMBRES_LOGO_POSIBLES = ["logo.png", "logo.jpg", "logo.jpeg", "logo.gif"]
+LOGO_ANCHO_MAX = 170   
+LOGO_ALTO_MAX = 100     
 
 
 class Mensaje:
@@ -114,7 +132,7 @@ class IAApp(tk.Tk):
         contenedor.pack(fill="both", expand=True)
 
         self._construir_sidebar(contenedor)
-        self._construir_panel_pdf(contenedor)  # Panel desplegable (oculto al inicio)
+        self._construir_panel_pdf(contenedor)  
         self._construir_panel_chat(contenedor)
 
     # ------------------------------------------------------------------
@@ -124,6 +142,11 @@ class IAApp(tk.Tk):
         self.sidebar = tk.Frame(parent, bg=self.colors["BG_SIDEBAR"], width=260)
         self.sidebar.pack(side="left", fill="y")
         self.sidebar.pack_propagate(False)
+
+        # Logo (arriba a la izquierda del sidebar)
+        self.frame_logo = tk.Frame(self.sidebar, bg=self.colors["BG_SIDEBAR"])
+        self.frame_logo.pack(fill="x", padx=14, pady=(16, 0))
+        self._cargar_logo(self.frame_logo)
 
         # Botón "Nuevo chat"
         btn_nuevo = tk.Button(
@@ -151,7 +174,7 @@ class IAApp(tk.Tk):
         frame_accesos.pack(fill="x", padx=8, pady=(4, 12))
 
         self._crear_item_nav(frame_accesos, "⚖", "Jurisprudencia", self.abrir_jurisprudencia)
-        self._crear_item_nav(frame_accesos, "📜", "Sentencias", self.abrir_sentencias)
+        self._crear_item_nav(frame_accesos, "📜", "Leyes", self.abrir_sentencias)
 
         # Separador sutil entre accesos rápidos e historial
         separador = tk.Frame(self.sidebar, bg=self.colors["BORDER"], height=1)
@@ -196,14 +219,58 @@ class IAApp(tk.Tk):
         self.btn_tema.pack(fill="x")
 
     # ------------------------------------------------------------------
+    # LOGO
+    # ------------------------------------------------------------------
+    def _buscar_ruta_logo(self):
+        """Devuelve la ruta del primer archivo de logo encontrado junto
+        al script, o None si no hay ninguno."""
+        for nombre in NOMBRES_LOGO_POSIBLES:
+            ruta = os.path.join(CARPETA_APP, nombre)
+            if os.path.exists(ruta):
+                return ruta
+        return None
+
+    def _cargar_logo(self, parent):
+        """Carga y muestra el logo en 'parent'. Si no encuentra el
+        archivo, o si falla la carga, simplemente no muestra nada."""
+        ruta_logo = self._buscar_ruta_logo()
+        if not ruta_logo:
+            return
+
+        try:
+            if _PIL_DISPONIBLE:
+                imagen = Image.open(ruta_logo)
+                # Redimensiona conservando proporción para caber en el sidebar
+                imagen.thumbnail((LOGO_ANCHO_MAX, LOGO_ALTO_MAX), Image.LANCZOS)
+                self.logo_img = ImageTk.PhotoImage(imagen)
+            else:
+                # Sin Pillow: tk.PhotoImage soporta PNG/GIF nativamente
+                img = tk.PhotoImage(file=ruta_logo)
+                factor_x = max(1, img.width() // LOGO_ANCHO_MAX)
+                factor_y = max(1, img.height() // LOGO_ALTO_MAX)
+                factor = max(factor_x, factor_y)
+                if factor > 1:
+                    img = img.subsample(factor, factor)
+                self.logo_img = img
+
+            lbl_logo = tk.Label(
+                parent,
+                image=self.logo_img,
+                bg=self.colors["BG_SIDEBAR"],
+            )
+            lbl_logo.pack(pady=(0, 10))
+            self.lbl_logo = lbl_logo
+        except Exception as e:
+            print(f"[Logo] No se pudo cargar '{ruta_logo}': {e}")
+
+    # ------------------------------------------------------------------
     # TEMA: MODO OSCURO / MODO CLARO
     # ------------------------------------------------------------------
     def _texto_boton_tema(self):
         return "☀  Modo claro" if self.modo_oscuro else "🌙  Modo oscuro"
 
     def alternar_tema(self):
-        """Cambia entre modo oscuro y modo claro, recoloreando en vivo
-        todos los widgets ya construidos."""
+        """Cambia entre modo oscuro y modo claro, recoloreando en vivo."""
         colores_anteriores = dict(self.colors)
         self.modo_oscuro = not self.modo_oscuro
         self.colors = dict(PALETA_OSCURA if self.modo_oscuro else PALETA_CLARA)
@@ -419,7 +486,12 @@ class IAApp(tk.Tk):
             messagebox.showerror("Error", f"No se pudo abrir el archivo:\n{e}")
 
     def abrir_sentencias(self):
-        print("Abrir sección: Sentencias")
+        # Abre en el navegador la página de leyes de México
+        url = "https://www.diputados.gob.mx/LeyesBiblio/index.htm"
+        try:
+            webbrowser.open(url)
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo abrir el navegador:\n{e}")
 
     def _refrescar_historial(self):
         for w in self.frame_historial.winfo_children():
@@ -618,10 +690,6 @@ class IAApp(tk.Tk):
         hilo.daemon = True
         hilo.start()
 
-    def _hilo_generar_respuesta(self, texto_usuario, widget_indicador):
-        respuesta = generar_respuesta_ia(texto_usuario)
-        self.after(0, lambda: self._finalizar_respuesta(respuesta, widget_indicador))
-
     def _finalizar_respuesta(self, respuesta, widget_indicador):
         conv = self.conversaciones[self.conversacion_actual]
         conv.mensajes.append(Mensaje("ia", respuesta))
@@ -630,6 +698,25 @@ class IAApp(tk.Tk):
         self.generando = False
         self.btn_enviar.configure(state="normal")
         self._scroll_al_final()
+
+    def _hilo_generar_respuesta(self, texto_usuario, widget_indicador):
+            # 1. Obtener la conversación activa
+            conv = self.conversaciones[self.conversacion_actual]
+            
+            # 2. Extraer el historial previo para darle memoria al modelo
+            historial_previo = []
+            for msg in conv.mensajes[:-1]:  # Ignoramos el último mensaje (que es la pregunta actual)
+                rol = "user" if msg.autor == "user" else "assistant"
+                historial_previo.append({"role": rol, "content": msg.texto})
+                
+            # Tomamos solo los últimos 6 mensajes
+            historial_previo = historial_previo[-6:]
+
+            # 3. Consultar a la IA pasando la pregunta Y el historial
+            respuesta = generar_respuesta_ia(texto_usuario, historial_previo)
+            
+            # 4. Actualizar la interfaz gráfica
+            self.after(0, lambda: self._finalizar_respuesta(respuesta, widget_indicador))
 
     # ------------------------------------------------------------------
     # RENDERIZADO DE BURBUJAS DE CHAT
@@ -690,22 +777,37 @@ class IAApp(tk.Tk):
 # ----------------------------------------------------------------------
 # CONEXIÓN CON EL MODELO DE IA
 # ----------------------------------------------------------------------
-def generar_respuesta_ia(mensaje_usuario: str) -> str:
-    """Envía la pregunta al servidor FastAPI y devuelve la respuesta de la IA."""
-    url = "http://127.0.0.1:8000/consultar"
-    payload = {"pregunta": mensaje_usuario}
-    
+# Apuntamos al localhost y al endpoint correcto que tienes en FastAPI
+BACKEND_URL = "http://127.0.0.1:8000/consultar"
+
+def generar_respuesta_ia(mensaje_usuario: str, historial: list = None) -> str:
+    if historial is None:
+        historial = []
+
+    # Ajustamos las llaves para que coincidan con el modelo Pydantic de tu backend
+    payload = {
+        "pregunta": mensaje_usuario,
+        "historial": historial  
+    }
+
     try:
-        respuesta = requests.post(url, json=payload)
-        respuesta.raise_for_status() 
+        response = requests.post(BACKEND_URL, json=payload, timeout=120)
         
-        datos = respuesta.json()
-        texto_ia = datos.get("respuesta", "Error: La IA no devolvió texto.")
-        
-        return texto_ia
-        
+        if response.status_code == 200:
+            data = response.json()
+            # Asegúrate de que el backend devuelva la respuesta en una llave "respuesta" o ajústalo aquí
+            respuesta = data.get("respuesta", data.get("answer", "No se obtuvo respuesta."))
+            
+            fuentes = data.get("fuentes", data.get("sources", []))
+            if fuentes:
+                respuesta += "\n\n *Fuentes consultadas:*\n" + "\n".join([f"- {f}" for f in fuentes])
+                
+            return respuesta
+        else:
+            return f"Error {response.status_code} al conectar con el servidor: {response.text}"
+            
     except requests.exceptions.ConnectionError:
-        return "Error: No se pudo conectar. ¿El servidor backend está encendido en el puerto 8000?"
+        return "No se pudo conectar con el Backend (Asegúrate de ejecutar FastAPI en localhost:8000)."
     except Exception as e:
         return f"Error inesperado: {str(e)}"
 
