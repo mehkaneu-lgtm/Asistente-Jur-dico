@@ -2,6 +2,8 @@
 
 from pathlib import Path
 from typing import Any, Callable, Optional
+# Importar la IA que tú construiste
+from backend.app.ai_service import generar_respuesta_legal
 
 try:
     from .casos_prueba import CASOS
