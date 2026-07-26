@@ -5,6 +5,7 @@ Requiere: pip install chromadb sentence-transformers --break-system-packages
 import json
 import os
 import chromadb 
+import re 
 
 CLEAN_DIR = "data/clean_text_v2"
 DB_DIR = "data/chroma_db"
@@ -131,6 +132,42 @@ def buscar_articulo_exacto(coleccion, numero_articulo: str, ordenamiento: str | 
     if ordenamiento:
         where = {"$and": [{"numero_articulo": numero_articulo}, {"ordenamiento": ordenamiento}]}
     return coleccion.get(where=where)
+
+
+
+ORDENAMIENTOS = {
+    "constitución": "Constitución Política del Estado de Tamaulipas",
+    "constitucion": "Constitución Política del Estado de Tamaulipas",
+    "código penal": "Código Penal para el Estado de Tamaulipas",
+    "codigo penal": "Código Penal para el Estado de Tamaulipas",
+    "código civil": "Código Civil para el Estado de Tamaulipas",
+    "codigo civil": "Código Civil para el Estado de Tamaulipas",
+}
+
+
+def buscar_inteligente(coleccion, modelo, pregunta: str, k: int = 5):
+    """Detecta si la pregunta pide un artículo específico ('artículo 14',
+    'art. 7 bis') y usa búsqueda exacta; si no, usa búsqueda semántica."""
+    match = re.search(r"art(?:[íi]culo)?\.?\s+(\d+)\s*(bis|ter|quater|qu[aá]ter)?", pregunta, re.IGNORECASE)
+
+    if match:
+        numero = match.group(1)
+        sufijo = (match.group(2) or "").capitalize()
+        numero_articulo = f"{numero} {sufijo}".strip()
+
+        ordenamiento = None
+        pregunta_baja = pregunta.lower()
+        for clave, nombre_completo in ORDENAMIENTOS.items():
+            if clave in pregunta_baja:
+                ordenamiento = nombre_completo
+                break
+
+        resultado_exacto = buscar_articulo_exacto(coleccion, numero_articulo, ordenamiento)
+        if resultado_exacto["documents"]:
+            return {"tipo": "exacto", "documentos": resultado_exacto["documents"], "metadatas": resultado_exacto["metadatas"]}
+
+    resultado_semantico = buscar(coleccion, modelo, pregunta, k=k)
+    return {"tipo": "semantico", "documentos": resultado_semantico["documents"][0], "metadatas": resultado_semantico["metadatas"][0]}
 
 if __name__ == "__main__":
     chunks = cargar_chunks()
