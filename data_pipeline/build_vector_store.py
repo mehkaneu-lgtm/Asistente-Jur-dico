@@ -4,7 +4,7 @@ Requiere: pip install chromadb sentence-transformers --break-system-packages
 """
 import json
 import os
-import chromadb
+import chromadb 
 
 CLEAN_DIR = "data/clean_text_v2"
 DB_DIR = "data/chroma_db"
@@ -124,7 +124,13 @@ def buscar(coleccion, modelo, pregunta: str, k: int = 5, filtro_ordenamiento: st
         where=where,
     )
     return resultados
-
+def buscar_articulo_exacto(coleccion, numero_articulo: str, ordenamiento: str | None = None):
+    """Búsqueda directa cuando se conoce el número de artículo exacto,
+    en vez de depender de similitud semántica."""
+    where = {"numero_articulo": numero_articulo}
+    if ordenamiento:
+        where = {"$and": [{"numero_articulo": numero_articulo}, {"ordenamiento": ordenamiento}]}
+    return coleccion.get(where=where)
 
 if __name__ == "__main__":
     chunks = cargar_chunks()
