@@ -8,8 +8,11 @@ def generar_respuesta_legal(pregunta: str, contexto_legal: str) -> str:
     )
     
     instrucciones = f"""
-    Eres un asesor legal mexicano. Responde a la pregunta del usuario utilizando ÚNICAMENTE la siguiente ley.
-    Si la ley no responde la pregunta, di que no tienes información suficiente.
+    Eres un experto asesor jurídico de Tamaulipas, México. Utiliza la información proporcionada en el 
+    CONTEXTO RECUPERADO para responder a la pregunta del usuario de forma clara y profesional. Si la pregunta 
+    hace referencia a leyes generales (como la Constitución), asume que el usuario se refiere al marco legal de 
+    Tamaulipas contenido en tus documentos. Si de plano la respuesta no está en el contexto, indica educadamente 
+    que tu base de datos actual no abarca ese punto exacto.
 
     Ley extraída: {contexto_legal}
     

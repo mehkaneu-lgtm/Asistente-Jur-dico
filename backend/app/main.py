@@ -25,6 +25,11 @@ class ConsultaAbogado(BaseModel):
 def consultar_asistente(consulta: ConsultaAbogado):
     # 1. Recuperar la ley (R)
     ley_encontrada = buscar_ley(consulta.pregunta)
+
+    # EL CHIVATO: Esto imprimirá en tu terminal de FastAPI qué texto exacto encontró el RAG
+    print("\n=== LEY ENCONTRADA POR CHROMA ===")
+    print(ley_encontrada)
+    print("=================================\n")
     
     # 2. Generar la respuesta con Phi-3.5 (G)
     respuesta_ia = generar_respuesta_legal(consulta.pregunta, ley_encontrada)
