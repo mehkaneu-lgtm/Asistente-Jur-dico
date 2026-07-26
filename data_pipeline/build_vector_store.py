@@ -4,8 +4,8 @@ Requiere: pip install chromadb sentence-transformers --break-system-packages
 """
 import json
 import os
-import chromadb 
-import re 
+import re
+import chromadb
 
 CLEAN_DIR = "data/clean_text_v2"
 DB_DIR = "data/chroma_db"
@@ -81,6 +81,7 @@ def cargar_chunks() -> list[dict]:
                         "titulo": art.get("titulo") or "",
                         "capitulo": art.get("capitulo") or "",
                         "estado_vigencia": art["estado_vigencia"],
+                        "invalidado_scjn": art.get("invalidado_scjn", False),
                     },
                 })
     return chunks
@@ -125,6 +126,8 @@ def buscar(coleccion, modelo, pregunta: str, k: int = 5, filtro_ordenamiento: st
         where=where,
     )
     return resultados
+
+
 def buscar_articulo_exacto(coleccion, numero_articulo: str, ordenamiento: str | None = None):
     """Búsqueda directa cuando se conoce el número de artículo exacto,
     en vez de depender de similitud semántica."""
@@ -132,7 +135,6 @@ def buscar_articulo_exacto(coleccion, numero_articulo: str, ordenamiento: str | 
     if ordenamiento:
         where = {"$and": [{"numero_articulo": numero_articulo}, {"ordenamiento": ordenamiento}]}
     return coleccion.get(where=where)
-
 
 
 ORDENAMIENTOS = {
@@ -148,7 +150,7 @@ ORDENAMIENTOS = {
 def buscar_inteligente(coleccion, modelo, pregunta: str, k: int = 5):
     """Detecta si la pregunta pide un artículo específico ('artículo 14',
     'art. 7 bis') y usa búsqueda exacta; si no, usa búsqueda semántica."""
-    match = re.search(r"art(?:[íi]culo)?\.?\s+(\d+)\s*(bis|ter|quater|qu[aá]ter)?", pregunta, re.IGNORECASE)
+    match = re.search(r"art(?:[íi]culo)?\.?\s+(\d+)\s*(bis|ter|quinquies|quater|qu[aá]ter)?", pregunta, re.IGNORECASE)
 
     if match:
         numero = match.group(1)
@@ -169,6 +171,7 @@ def buscar_inteligente(coleccion, modelo, pregunta: str, k: int = 5):
     resultado_semantico = buscar(coleccion, modelo, pregunta, k=k)
     return {"tipo": "semantico", "documentos": resultado_semantico["documents"][0], "metadatas": resultado_semantico["metadatas"][0]}
 
+
 if __name__ == "__main__":
     chunks = cargar_chunks()
     print(f"Total de chunks a indexar: {len(chunks)}")
@@ -181,3 +184,4 @@ if __name__ == "__main__":
     for doc, meta in zip(resultados["documents"][0], resultados["metadatas"][0]):
         print(f"\n[{meta['ordenamiento']} - Art. {meta['numero_articulo']}]")
         print(doc[:200])
+        
