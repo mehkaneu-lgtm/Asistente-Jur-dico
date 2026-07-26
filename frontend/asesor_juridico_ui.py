@@ -16,20 +16,35 @@ from tkinter import font as tkfont
 from tkinter import messagebox
 
 # ----------------------------------------------------------------------
-# PALETA DE COLORES (estilo Portal de Servicios en Línea del Poder
-# Judicial de la Federación: guinda institucional, dorado y fondo claro)
+# PALETAS DE COLORES
 # ----------------------------------------------------------------------
-COLOR_BG_SIDEBAR = "#F2ECDF"       # beige claro institucional
-COLOR_BG_MAIN = "#FFFFFF"          # blanco
-COLOR_BG_INPUT = "#FFFFFF"
-COLOR_BG_BUBBLE_USER = "#F6E6EA"   # tinte guinda muy claro
-COLOR_BG_BUBBLE_IA = "#FFFFFF"
-COLOR_TEXT_PRIMARY = "#2B2B2B"
-COLOR_TEXT_SECONDARY = "#756B57"
-COLOR_ACCENT = "#9F2241"           # guinda institucional (Gobierno de México)
-COLOR_ACCENT_HOVER = "#7A1B33"
-COLOR_BORDER = "#D8CFB8"           # línea dorada/beige sutil
-COLOR_SCROLLBAR = "#C9BFA4"
+PALETA_CLARA = {
+    "BG_SIDEBAR": "#F2ECDF",       # beige claro institucional
+    "BG_MAIN": "#FFFFFF",          # blanco
+    "BG_INPUT": "#FFFFFF",
+    "BG_BUBBLE_USER": "#F6E6EA",   # tinte guinda muy claro
+    "BG_BUBBLE_IA": "#FFFFFF",
+    "TEXT_PRIMARY": "#2B2B2B",
+    "TEXT_SECONDARY": "#756B57",
+    "ACCENT": "#9F2241",           # guinda institucional (Gobierno de México)
+    "ACCENT_HOVER": "#7A1B33",
+    "BORDER": "#D8CFB8",           # línea dorada/beige sutil
+    "SCROLLBAR": "#C9BFA4",
+}
+
+PALETA_OSCURA = {
+    "BG_SIDEBAR": "#201A17",
+    "BG_MAIN": "#171310",
+    "BG_INPUT": "#2A231F",
+    "BG_BUBBLE_USER": "#3A2229",
+    "BG_BUBBLE_IA": "#2A231F",
+    "TEXT_PRIMARY": "#EFE9E1",
+    "TEXT_SECONDARY": "#B8A98F",
+    "ACCENT": "#D9648A",           # guinda más claro para contraste en oscuro
+    "ACCENT_HOVER": "#C24A72",
+    "BORDER": "#4A3F35",
+    "SCROLLBAR": "#4A3F35",
+}
 
 FONT_FAMILY = "Segoe UI"
 
@@ -57,7 +72,12 @@ class IAApp(tk.Tk):
         self.title("Asesor Jurídico")
         self.geometry("1100x720")
         self.minsize(760, 480)
-        self.configure(bg=COLOR_BG_MAIN)
+
+        # Estado del Tema
+        self.modo_oscuro = False
+        self.colors = dict(PALETA_CLARA)
+
+        self.configure(bg=self.colors["BG_MAIN"])
 
         # Fuentes
         self.font_normal = tkfont.Font(family=FONT_FAMILY, size=11)
@@ -90,7 +110,7 @@ class IAApp(tk.Tk):
     # LAYOUT PRINCIPAL
     # ------------------------------------------------------------------
     def _construir_layout(self):
-        contenedor = tk.Frame(self, bg=COLOR_BG_MAIN)
+        contenedor = tk.Frame(self, bg=self.colors["BG_MAIN"])
         contenedor.pack(fill="both", expand=True)
 
         self._construir_sidebar(contenedor)
@@ -101,7 +121,7 @@ class IAApp(tk.Tk):
     # BARRA LATERAL (IZQUIERDA)
     # ------------------------------------------------------------------
     def _construir_sidebar(self, parent):
-        self.sidebar = tk.Frame(parent, bg=COLOR_BG_SIDEBAR, width=260)
+        self.sidebar = tk.Frame(parent, bg=self.colors["BG_SIDEBAR"], width=260)
         self.sidebar.pack(side="left", fill="y")
         self.sidebar.pack_propagate(False)
 
@@ -110,9 +130,9 @@ class IAApp(tk.Tk):
             self.sidebar,
             text="+  Nuevo caso",
             font=self.font_bold,
-            bg=COLOR_ACCENT,
+            bg=self.colors["ACCENT"],
             fg="white",
-            activebackground=COLOR_ACCENT_HOVER,
+            activebackground=self.colors["ACCENT_HOVER"],
             activeforeground="white",
             relief="flat",
             bd=0,
@@ -127,14 +147,14 @@ class IAApp(tk.Tk):
         # ------------------------------------------------------------
         # Accesos rápidos (iconos de funcionalidades)
         # ------------------------------------------------------------
-        frame_accesos = tk.Frame(self.sidebar, bg=COLOR_BG_SIDEBAR)
+        frame_accesos = tk.Frame(self.sidebar, bg=self.colors["BG_SIDEBAR"])
         frame_accesos.pack(fill="x", padx=8, pady=(4, 12))
 
         self._crear_item_nav(frame_accesos, "⚖", "Jurisprudencia", self.abrir_jurisprudencia)
         self._crear_item_nav(frame_accesos, "📜", "Sentencias", self.abrir_sentencias)
 
         # Separador sutil entre accesos rápidos e historial
-        separador = tk.Frame(self.sidebar, bg=COLOR_BORDER, height=1)
+        separador = tk.Frame(self.sidebar, bg=self.colors["BORDER"], height=1)
         separador.pack(fill="x", padx=16, pady=(0, 8))
 
         # Etiqueta "Historial"
@@ -142,43 +162,95 @@ class IAApp(tk.Tk):
             self.sidebar,
             text="HISTORIAL",
             font=self.font_small,
-            bg=COLOR_BG_SIDEBAR,
-            fg=COLOR_TEXT_SECONDARY,
+            bg=self.colors["BG_SIDEBAR"],
+            fg=self.colors["TEXT_SECONDARY"],
             anchor="w",
         )
         lbl_hist.pack(fill="x", padx=16, pady=(10, 4))
 
         # Lista de conversaciones (scrollable)
-        self.frame_historial = tk.Frame(self.sidebar, bg=COLOR_BG_SIDEBAR)
+        self.frame_historial = tk.Frame(self.sidebar, bg=self.colors["BG_SIDEBAR"])
         self.frame_historial.pack(fill="both", expand=True, padx=8)
 
-        # Footer sidebar (config / usuario)
-        footer = tk.Frame(self.sidebar, bg=COLOR_BG_SIDEBAR, height=54)
+        # Footer sidebar (botón de modo oscuro / claro)
+        footer = tk.Frame(self.sidebar, bg=self.colors["BG_SIDEBAR"], height=54)
         footer.pack(fill="x", side="bottom")
         footer.pack_propagate(False)
-        lbl_user = tk.Label(
+        
+        self.btn_tema = tk.Button(
             footer,
-            text="⚙  Configuración",
+            text=self._texto_boton_tema(),
             font=self.font_normal,
-            bg=COLOR_BG_SIDEBAR,
-            fg=COLOR_TEXT_SECONDARY,
+            bg=self.colors["BG_SIDEBAR"],
+            fg=self.colors["TEXT_SECONDARY"],
+            activebackground=self.colors["BG_INPUT"],
+            activeforeground=self.colors["TEXT_PRIMARY"],
+            relief="flat",
+            bd=0,
             anchor="w",
+            padx=16,
+            pady=14,
             cursor="hand2",
+            command=self.alternar_tema,
         )
-        lbl_user.pack(fill="x", padx=16, pady=14)
+        self.btn_tema.pack(fill="x")
+
+    # ------------------------------------------------------------------
+    # TEMA: MODO OSCURO / MODO CLARO
+    # ------------------------------------------------------------------
+    def _texto_boton_tema(self):
+        return "☀  Modo claro" if self.modo_oscuro else "🌙  Modo oscuro"
+
+    def alternar_tema(self):
+        """Cambia entre modo oscuro y modo claro, recoloreando en vivo
+        todos los widgets ya construidos."""
+        colores_anteriores = dict(self.colors)
+        self.modo_oscuro = not self.modo_oscuro
+        self.colors = dict(PALETA_OSCURA if self.modo_oscuro else PALETA_CLARA)
+
+        mapa = {
+            colores_anteriores[clave]: self.colors[clave]
+            for clave in colores_anteriores
+        }
+
+        self.configure(bg=self.colors["BG_MAIN"])
+        self._recolorear_arbol(self, mapa)
+        self.btn_tema.configure(text=self._texto_boton_tema())
+
+    def _recolorear_arbol(self, widget, mapa):
+        self._recolorear_widget(widget, mapa)
+        for hijo in widget.winfo_children():
+            self._recolorear_arbol(hijo, mapa)
+
+    def _recolorear_widget(self, widget, mapa):
+        propiedades = (
+            "bg", "fg", "background", "foreground",
+            "activebackground", "activeforeground",
+            "highlightbackground", "highlightcolor",
+            "insertbackground", "selectbackground", "selectforeground",
+            "troughcolor", "disabledforeground",
+        )
+        for prop in propiedades:
+            try:
+                actual = widget.cget(prop)
+            except tk.TclError:
+                continue
+            if actual in mapa:
+                try:
+                    widget.configure(**{prop: mapa[actual]})
+                except tk.TclError:
+                    pass
 
     def _crear_item_nav(self, parent, icono, texto, command=None):
-        """Crea un botón de acceso rápido tipo 'icono + texto', al estilo
-        de los ítems de navegación en interfaces de IA (Claude, Copilot, etc.)."""
-        item = tk.Frame(parent, bg=COLOR_BG_SIDEBAR, cursor="hand2")
+        item = tk.Frame(parent, bg=self.colors["BG_SIDEBAR"], cursor="hand2")
         item.pack(fill="x", pady=1)
 
         lbl_icono = tk.Label(
             item,
             text=icono,
             font=self.font_normal,
-            bg=COLOR_BG_SIDEBAR,
-            fg=COLOR_ACCENT,
+            bg=self.colors["BG_SIDEBAR"],
+            fg=self.colors["ACCENT"],
             width=2,
         )
         lbl_icono.pack(side="left", padx=(8, 4), pady=8)
@@ -187,8 +259,8 @@ class IAApp(tk.Tk):
             item,
             text=texto,
             font=self.font_normal,
-            bg=COLOR_BG_SIDEBAR,
-            fg=COLOR_TEXT_PRIMARY,
+            bg=self.colors["BG_SIDEBAR"],
+            fg=self.colors["TEXT_PRIMARY"],
             anchor="w",
         )
         lbl_texto.pack(side="left", fill="x", expand=True, pady=8)
@@ -201,11 +273,11 @@ class IAApp(tk.Tk):
 
         def on_enter(event=None):
             for w in widgets:
-                w.configure(bg=COLOR_BG_INPUT)
+                w.configure(bg=self.colors["BG_INPUT"])
 
         def on_leave(event=None):
             for w in widgets:
-                w.configure(bg=COLOR_BG_SIDEBAR)
+                w.configure(bg=self.colors["BG_SIDEBAR"])
 
         for w in widgets:
             w.bind("<Button-1>", on_click)
@@ -218,28 +290,24 @@ class IAApp(tk.Tk):
     # PANEL DESPLEGABLE DE JURISPRUDENCIAS / PDFS
     # ------------------------------------------------------------------
     def _construir_panel_pdf(self, parent):
-        """Panel lateral (tipo tarjeta) que aparece junto al sidebar al dar
-        clic en 'Jurisprudencia'. Permite seleccionar PDFs y abrirlos."""
         self.panel_pdf = tk.Frame(
             parent,
-            bg=COLOR_BG_SIDEBAR,
+            bg=self.colors["BG_SIDEBAR"],
             width=280,
-            highlightbackground=COLOR_BORDER,
+            highlightbackground=self.colors["BORDER"],
             highlightthickness=1,
         )
         self.panel_pdf.pack_propagate(False)
-        # No se hace pack() aquí: se muestra/oculta en abrir_jurisprudencia()
 
-        # --- Cabecera del panel ---
-        header_pdf = tk.Frame(self.panel_pdf, bg=COLOR_BG_SIDEBAR)
+        header_pdf = tk.Frame(self.panel_pdf, bg=self.colors["BG_SIDEBAR"])
         header_pdf.pack(fill="x", padx=10, pady=10)
 
         lbl_titulo = tk.Label(
             header_pdf,
             text="📁 Jurisprudencias PDF",
             font=self.font_bold,
-            bg=COLOR_BG_SIDEBAR,
-            fg=COLOR_ACCENT,
+            bg=self.colors["BG_SIDEBAR"],
+            fg=self.colors["ACCENT"],
             anchor="w",
         )
         lbl_titulo.pack(side="left", fill="x", expand=True)
@@ -248,25 +316,23 @@ class IAApp(tk.Tk):
             header_pdf,
             text="✕",
             font=self.font_bold,
-            bg=COLOR_BG_SIDEBAR,
-            fg=COLOR_TEXT_SECONDARY,
+            bg=self.colors["BG_SIDEBAR"],
+            fg=self.colors["TEXT_SECONDARY"],
             bd=0,
             cursor="hand2",
             command=self.abrir_jurisprudencia,
         )
         btn_cerrar.pack(side="right")
 
-        # --- Contenedor con la lista de PDFs seleccionados ---
-        self.frame_lista_pdf = tk.Frame(self.panel_pdf, bg=COLOR_BG_SIDEBAR)
+        self.frame_lista_pdf = tk.Frame(self.panel_pdf, bg=self.colors["BG_SIDEBAR"])
         self.frame_lista_pdf.pack(fill="both", expand=True, padx=8, pady=5)
 
-        # --- Botón para releer la carpeta fija de PDFs ---
         btn_recargar = tk.Button(
             self.panel_pdf,
             text="🔄  Actualizar carpeta",
             font=self.font_small,
-            bg=COLOR_BG_INPUT,
-            fg=COLOR_TEXT_PRIMARY,
+            bg=self.colors["BG_INPUT"],
+            fg=self.colors["TEXT_PRIMARY"],
             bd=1,
             relief="solid",
             cursor="hand2",
@@ -275,19 +341,15 @@ class IAApp(tk.Tk):
         btn_recargar.pack(fill="x", padx=10, pady=(0, 10))
 
     def abrir_jurisprudencia(self):
-        """Muestra u oculta el panel lateral de jurisprudencias (PDFs)."""
         if self.panel_pdf_visible:
             self.panel_pdf.pack_forget()
             self.panel_pdf_visible = False
         else:
-            # Se empaqueta justo a la derecha del sidebar principal
             self.panel_pdf.pack(side="left", fill="y", after=self.sidebar)
             self.panel_pdf_visible = True
             self._refrescar_lista_pdfs()
 
     def _refrescar_lista_pdfs(self):
-        """Escanea la carpeta fija CARPETA_PDFS y redibuja la lista de PDFs
-        encontrados dentro del panel."""
         for w in self.frame_lista_pdf.winfo_children():
             w.destroy()
 
@@ -307,8 +369,8 @@ class IAApp(tk.Tk):
                 self.frame_lista_pdf,
                 text=f"No hay PDFs en:\n{CARPETA_PDFS}\n\nColoca ahí tus archivos\ny pulsa 'Actualizar carpeta'.",
                 font=self.font_small,
-                bg=COLOR_BG_SIDEBAR,
-                fg=COLOR_TEXT_SECONDARY,
+                bg=self.colors["BG_SIDEBAR"],
+                fg=self.colors["TEXT_SECONDARY"],
                 justify="center",
                 wraplength=240,
             )
@@ -321,36 +383,34 @@ class IAApp(tk.Tk):
 
             item = tk.Frame(
                 self.frame_lista_pdf,
-                bg=COLOR_BG_INPUT,
+                bg=self.colors["BG_INPUT"],
                 cursor="hand2",
-                highlightbackground=COLOR_BORDER,
+                highlightbackground=self.colors["BORDER"],
                 highlightthickness=1,
             )
             item.pack(fill="x", pady=4, padx=2)
 
-            lbl_ic = tk.Label(item, text="📄", bg=COLOR_BG_INPUT, font=self.font_normal)
+            lbl_ic = tk.Label(item, text="📄", bg=self.colors["BG_INPUT"], font=self.font_normal)
             lbl_ic.pack(side="left", padx=(6, 2), pady=6)
 
             lbl_txt = tk.Label(
                 item,
                 text=nombre_corto,
-                bg=COLOR_BG_INPUT,
+                bg=self.colors["BG_INPUT"],
                 font=self.font_small,
-                fg=COLOR_TEXT_PRIMARY,
+                fg=self.colors["TEXT_PRIMARY"],
                 anchor="w",
             )
             lbl_txt.pack(side="left", fill="x", expand=True, pady=6)
 
-            # Clic en el ícono o el nombre abre el PDF
             for w in (item, lbl_ic, lbl_txt):
                 w.bind("<Button-1>", lambda e, r=ruta: self._abrir_pdf(r))
 
     def _abrir_pdf(self, ruta_archivo):
-        """Abre el PDF con el lector predeterminado del sistema operativo."""
         try:
             sistema = platform.system()
             if sistema == "Windows":
-                os.startfile(ruta_archivo)  # type: ignore[attr-defined]
+                os.startfile(ruta_archivo)
             elif sistema == "Darwin":
                 subprocess.Popen(["open", ruta_archivo])
             else:
@@ -359,7 +419,6 @@ class IAApp(tk.Tk):
             messagebox.showerror("Error", f"No se pudo abrir el archivo:\n{e}")
 
     def abrir_sentencias(self):
-        # TODO: conectar con el módulo/consulta de Sentencias
         print("Abrir sección: Sentencias")
 
     def _refrescar_historial(self):
@@ -368,13 +427,13 @@ class IAApp(tk.Tk):
 
         for conv in reversed(list(self.conversaciones.values())):
             activo = conv.id == self.conversacion_actual
-            bg = COLOR_BG_INPUT if activo else COLOR_BG_SIDEBAR
+            bg = self.colors["BG_INPUT"] if activo else self.colors["BG_SIDEBAR"]
             item = tk.Label(
                 self.frame_historial,
                 text=conv.titulo,
                 font=self.font_normal,
                 bg=bg,
-                fg=COLOR_TEXT_PRIMARY,
+                fg=self.colors["TEXT_PRIMARY"],
                 anchor="w",
                 padx=10,
                 pady=8,
@@ -383,36 +442,34 @@ class IAApp(tk.Tk):
             item.pack(fill="x", pady=2)
             item.bind("<Button-1>", lambda e, cid=conv.id: self.cambiar_conversacion(cid))
             item.bind("<Enter>", lambda e, lbl=item, act=activo: lbl.configure(
-                bg=COLOR_BG_INPUT if not act else bg))
+                bg=self.colors["BG_INPUT"] if not act else bg))
             item.bind("<Leave>", lambda e, lbl=item, b=bg: lbl.configure(bg=b))
 
     # ------------------------------------------------------------------
     # PANEL DE CHAT
     # ------------------------------------------------------------------
     def _construir_panel_chat(self, parent):
-        self.panel_chat = tk.Frame(parent, bg=COLOR_BG_MAIN)
+        self.panel_chat = tk.Frame(parent, bg=self.colors["BG_MAIN"])
         self.panel_chat.pack(side="left", fill="both", expand=True)
 
-        # --- Cabecera ---
-        header = tk.Frame(self.panel_chat, bg=COLOR_BG_MAIN, height=50)
+        header = tk.Frame(self.panel_chat, bg=self.colors["BG_MAIN"], height=50)
         header.pack(fill="x")
         header.pack_propagate(False)
         self.lbl_titulo_conv = tk.Label(
             header,
             text="Nueva conversación",
             font=self.font_titulo,
-            bg=COLOR_BG_MAIN,
-            fg=COLOR_TEXT_PRIMARY,
+            bg=self.colors["BG_MAIN"],
+            fg=self.colors["TEXT_PRIMARY"],
         )
         self.lbl_titulo_conv.pack(side="left", padx=20, pady=10)
 
-        # --- Área de mensajes (canvas + scrollbar) ---
-        area_wrapper = tk.Frame(self.panel_chat, bg=COLOR_BG_MAIN)
+        area_wrapper = tk.Frame(self.panel_chat, bg=self.colors["BG_MAIN"])
         area_wrapper.pack(fill="both", expand=True, padx=0, pady=0)
 
-        self.canvas = tk.Canvas(area_wrapper, bg=COLOR_BG_MAIN, highlightthickness=0)
+        self.canvas = tk.Canvas(area_wrapper, bg=self.colors["BG_MAIN"], highlightthickness=0)
         self.scrollbar = tk.Scrollbar(area_wrapper, orient="vertical", command=self.canvas.yview)
-        self.frame_mensajes = tk.Frame(self.canvas, bg=COLOR_BG_MAIN)
+        self.frame_mensajes = tk.Frame(self.canvas, bg=self.colors["BG_MAIN"])
 
         self.frame_mensajes.bind(
             "<Configure>",
@@ -427,7 +484,6 @@ class IAApp(tk.Tk):
         self.canvas.pack(side="left", fill="both", expand=True)
         self.scrollbar.pack(side="right", fill="y")
 
-        # --- Zona de entrada de texto ---
         self._construir_zona_entrada()
 
     def _on_canvas_resize(self, event):
@@ -437,19 +493,19 @@ class IAApp(tk.Tk):
         self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def _construir_zona_entrada(self):
-        contenedor_input = tk.Frame(self.panel_chat, bg=COLOR_BG_MAIN)
+        contenedor_input = tk.Frame(self.panel_chat, bg=self.colors["BG_MAIN"])
         contenedor_input.pack(fill="x", padx=24, pady=(0, 20))
 
-        caja = tk.Frame(contenedor_input, bg=COLOR_BG_INPUT, highlightbackground=COLOR_BORDER,
+        caja = tk.Frame(contenedor_input, bg=self.colors["BG_INPUT"], highlightbackground=self.colors["BORDER"],
                          highlightthickness=1, bd=0)
         caja.pack(fill="x")
 
         self.entry_texto = tk.Text(
             caja,
             height=3,
-            bg=COLOR_BG_INPUT,
-            fg=COLOR_TEXT_PRIMARY,
-            insertbackground=COLOR_TEXT_PRIMARY,
+            bg=self.colors["BG_INPUT"],
+            fg=self.colors["TEXT_PRIMARY"],
+            insertbackground=self.colors["TEXT_PRIMARY"],
             font=self.font_normal,
             relief="flat",
             bd=0,
@@ -459,15 +515,15 @@ class IAApp(tk.Tk):
         )
         self.entry_texto.pack(side="left", fill="both", expand=True)
         self.entry_texto.bind("<Return>", self._on_enter_presionado)
-        self.entry_texto.bind("<Shift-Return>", lambda e: None)  # permite salto de línea
+        self.entry_texto.bind("<Shift-Return>", lambda e: None) 
 
         self.btn_enviar = tk.Button(
             caja,
             text="➤",
             font=self.font_bold,
-            bg=COLOR_ACCENT,
+            bg=self.colors["ACCENT"],
             fg="white",
-            activebackground=COLOR_ACCENT_HOVER,
+            activebackground=self.colors["ACCENT_HOVER"],
             activeforeground="white",
             relief="flat",
             bd=0,
@@ -481,13 +537,12 @@ class IAApp(tk.Tk):
             contenedor_input,
             text="Enter para enviar · Shift+Enter para nueva línea",
             font=self.font_small,
-            bg=COLOR_BG_MAIN,
-            fg=COLOR_TEXT_SECONDARY,
+            bg=self.colors["BG_MAIN"],
+            fg=self.colors["TEXT_SECONDARY"],
         )
         lbl_hint.pack(anchor="e", pady=(4, 0))
 
     def _on_enter_presionado(self, event):
-        # Enter envía el mensaje; Shift+Enter agrega salto de línea (manejado arriba)
         self.enviar_mensaje()
         return "break"
 
@@ -526,8 +581,8 @@ class IAApp(tk.Tk):
             self.frame_mensajes,
             text="¿En qué puedo ayudarte hoy?",
             font=tkfont.Font(family=FONT_FAMILY, size=20, weight="bold"),
-            bg=COLOR_BG_MAIN,
-            fg=COLOR_TEXT_PRIMARY,
+            bg=self.colors["BG_MAIN"],
+            fg=self.colors["TEXT_PRIMARY"],
         )
         lbl.pack(pady=(80, 0))
 
@@ -546,7 +601,6 @@ class IAApp(tk.Tk):
 
         conv = self.conversaciones[self.conversacion_actual]
 
-        # Si es el primer mensaje, limpiar mensaje de bienvenida y usarlo como título
         if not conv.mensajes:
             self._limpiar_area_mensajes()
             conv.titulo = (texto[:28] + "…") if len(texto) > 28 else texto
@@ -556,26 +610,21 @@ class IAApp(tk.Tk):
         conv.mensajes.append(Mensaje("user", texto))
         self._agregar_burbuja("user", texto)
 
-        # Indicador de "escribiendo…"
         self.generando = True
         self.btn_enviar.configure(state="disabled")
         indicador = self._agregar_burbuja("ia", "Pensando…", devolver_widget=True)
 
-        # Llamada a la IA en un hilo aparte para no congelar la interfaz
         hilo = threading.Thread(target=self._hilo_generar_respuesta, args=(texto, indicador))
         hilo.daemon = True
         hilo.start()
 
     def _hilo_generar_respuesta(self, texto_usuario, widget_indicador):
         respuesta = generar_respuesta_ia(texto_usuario)
-        # Volver al hilo principal de Tkinter para actualizar la interfaz
         self.after(0, lambda: self._finalizar_respuesta(respuesta, widget_indicador))
 
     def _finalizar_respuesta(self, respuesta, widget_indicador):
         conv = self.conversaciones[self.conversacion_actual]
         conv.mensajes.append(Mensaje("ia", respuesta))
-
-        # Reemplaza el texto del indicador "Pensando…" por la respuesta real
         widget_indicador.configure(text=respuesta)
 
         self.generando = False
@@ -588,21 +637,21 @@ class IAApp(tk.Tk):
     def _agregar_burbuja(self, autor, texto, devolver_widget=False):
         es_usuario = autor == "user"
 
-        fila = tk.Frame(self.frame_mensajes, bg=COLOR_BG_MAIN)
+        fila = tk.Frame(self.frame_mensajes, bg=self.colors["BG_MAIN"])
         fila.pack(fill="x", padx=20, pady=8, anchor="e" if es_usuario else "w")
 
-        bg_burbuja = COLOR_BG_BUBBLE_USER if es_usuario else COLOR_BG_BUBBLE_IA
+        bg_burbuja = self.colors["BG_BUBBLE_USER"] if es_usuario else self.colors["BG_BUBBLE_IA"]
         etiqueta_autor = "Tú" if es_usuario else "Asistente"
 
-        contenedor = tk.Frame(fila, bg=COLOR_BG_MAIN)
+        contenedor = tk.Frame(fila, bg=self.colors["BG_MAIN"])
         contenedor.pack(anchor="e" if es_usuario else "w")
 
         lbl_autor = tk.Label(
             contenedor,
             text=etiqueta_autor,
             font=self.font_small,
-            bg=COLOR_BG_MAIN,
-            fg=COLOR_TEXT_SECONDARY,
+            bg=self.colors["BG_MAIN"],
+            fg=self.colors["TEXT_SECONDARY"],
             anchor="e" if es_usuario else "w",
         )
         lbl_autor.pack(fill="x")
@@ -610,18 +659,18 @@ class IAApp(tk.Tk):
         burbuja = tk.Frame(
             contenedor,
             bg=bg_burbuja,
-            highlightbackground=COLOR_BORDER,
+            highlightbackground=self.colors["BORDER"],
             highlightthickness=1 if es_usuario else 0,
         )
         burbuja.pack(anchor="e" if es_usuario else "w", pady=(2, 0))
 
-        ancho_max = 70  # caracteres aprox. antes de hacer wrap
+        ancho_max = 70  
         lbl_texto = tk.Label(
             burbuja,
             text=texto,
             font=self.font_normal,
             bg=bg_burbuja,
-            fg=COLOR_TEXT_PRIMARY,
+            fg=self.colors["TEXT_PRIMARY"],
             justify="left",
             anchor="w",
             wraplength=560,
@@ -647,7 +696,6 @@ def generar_respuesta_ia(mensaje_usuario: str) -> str:
     payload = {"pregunta": mensaje_usuario}
     
     try:
-        # Hacemos la petición POST a tu servidor
         respuesta = requests.post(url, json=payload)
         respuesta.raise_for_status() 
         
