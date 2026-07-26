@@ -8,7 +8,7 @@ import re
 import chromadb
 
 CLEAN_DIR = "data/clean_text_v2"
-DB_DIR = "data/chroma_db"
+DB_DIR = "./backend/chroma_db"
 MAX_CARACTERES_CHUNK = 1800  # ~450 tokens aprox, margen cómodo para modelos de embeddings
 
 LEYES = [

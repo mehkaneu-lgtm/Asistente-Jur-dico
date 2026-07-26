@@ -10,6 +10,7 @@ import time
 import uuid
 import subprocess
 import platform
+import requests
 import tkinter as tk
 from tkinter import font as tkfont
 from tkinter import messagebox
@@ -641,35 +642,24 @@ class IAApp(tk.Tk):
 # CONEXIÓN CON EL MODELO DE IA
 # ----------------------------------------------------------------------
 def generar_respuesta_ia(mensaje_usuario: str) -> str:
-    """
-    Punto de integración con tu backend de IA.
-
-    Reemplaza el contenido de esta función para conectar con:
-      - La API de Anthropic (Claude) usando el SDK 'anthropic'
-      - La API de OpenAI
-      - Un modelo local (Ollama, llama.cpp, etc.)
-
-    Ejemplo con la API de Anthropic (requiere `pip install anthropic`
-    y una variable de entorno ANTHROPIC_API_KEY):
-
-        import anthropic
-        client = anthropic.Anthropic()
-        respuesta = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=1000,
-            messages=[{"role": "user", "content": mensaje_usuario}],
-        )
-        return respuesta.content[0].text
-
-    Por ahora, esta función solo simula una respuesta con un pequeño retraso.
-    """
-    time.sleep(1.2)  # simula latencia de red
-    return (
-        "Esto es una respuesta de ejemplo. Conecta la función "
-        "generar_respuesta_ia() a tu modelo de IA real (Claude, "
-        "OpenAI, un modelo local, etc.) para reemplazar este texto.\n\n"
-        f"Tu mensaje fue: \"{mensaje_usuario}\""
-    )
+    """Envía la pregunta al servidor FastAPI y devuelve la respuesta de la IA."""
+    url = "http://127.0.0.1:8000/consultar"
+    payload = {"pregunta": mensaje_usuario}
+    
+    try:
+        # Hacemos la petición POST a tu servidor
+        respuesta = requests.post(url, json=payload)
+        respuesta.raise_for_status() 
+        
+        datos = respuesta.json()
+        texto_ia = datos.get("respuesta", "Error: La IA no devolvió texto.")
+        
+        return texto_ia
+        
+    except requests.exceptions.ConnectionError:
+        return "Error: No se pudo conectar. ¿El servidor backend está encendido en el puerto 8000?"
+    except Exception as e:
+        return f"Error inesperado: {str(e)}"
 
 
 if __name__ == "__main__":
